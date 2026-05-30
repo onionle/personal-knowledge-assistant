@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  LangChain4j 版 · Maven 项目定义文件 (pom.xml)
+
+  这个文件告诉 Maven：
+    1. 这个项目叫什么、版本是多少
+    2. 用什么 Java 版本编译
+    3. 依赖哪些 jar 包（最关键！）
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 继承 Spring Boot 的父 pom：拿到一堆默认配置（编译参数、插件版本、依赖版本）-->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.0</version>
+        <relativePath/>
+    </parent>
+
+    <!-- 项目坐标：groupId 通常用反域名，artifactId 是项目名 -->
+    <groupId>com.example</groupId>
+    <artifactId>langchain4j-knowledge-assistant</artifactId>
+    <version>0.1.0</version>
+    <name>LangChain4j Knowledge Assistant</name>
+    <description>LangChain4j 版个人知识库助手</description>
+
+    <properties>
+        <!-- 用 Java 21 编译 -->
+        <java.version>21</java.version>
+        <!-- LangChain4j 版本统一管理。后续升级只改这一行。
+             从 1.0.0 升到 1.15.1 的原因：Chroma 服务端已是 1.5.9（只剩 v2 API），
+             而 1.0.0 配套的 langchain4j-chroma:1.0.0-beta5 只会调已废弃的 v1 API → 启动报 405。
+             ≥1.8.0 对应的 langchain4j-chroma(-betaNN) 才支持 Chroma v2。
+             这里选 1.14.1 而非最新 1.15.1：因为 bge 嵌入模块的 1.15.1-beta25 阿里云镜像
+             尚未同步（404），1.14.1-beta24 全套齐全。等镜像跟上可再升。
+             注意：langchain4j 的向量库/嵌入集成模块官方只发 -beta（上游 API 仍在演进），
+             核心模块（langchain4j / langchain4j-open-ai）是稳定版，BOM 会各自映射到正确版本。 -->
+        <langchain4j.version>1.14.1</langchain4j.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- LangChain4j BOM (Bill Of Materials)：统一管理 langchain4j-* 系列子模块版本 -->
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-bom</artifactId>
+                <version>${langchain4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- Spring Boot Web 起步依赖：包含 Spring MVC + 嵌入式 Tomcat。
+             一行就够，自动给你装好 REST 接口需要的所有东西 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- LangChain4j 核心：消息类、模型接口、AiServices 等 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j</artifactId>
+        </dependency>
+
+        <!-- LangChain4j 的 OpenAI 集成
+             DeepSeek 兼容 OpenAI 协议，所以用这个包 + 自定义 baseUrl 即可。
+             以后想换 Moonshot / Qwen / 智谱等任何 OpenAI 兼容模型都不用换包，
+             只改配置就行。 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-open-ai</artifactId>
+        </dependency>
+
+        <!-- ============================================================ -->
+        <!-- Step 3 新增：本地 Embedding + Chroma 向量库 + 文档加载/切分     -->
+        <!-- ============================================================ -->
+
+        <!-- BGE-small-zh-v1.5 本地嵌入模型
+             把 ONNX 模型文件直接打进 jar，加完依赖就能 new 出来用，
+             零运行时下载——这是 LangChain4j 最人体工学的部分之一。
+             代价：依赖体积 +~100MB（一次性，下载后 Maven 缓存住） -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-embeddings-bge-small-zh-v15</artifactId>
+        </dependency>
+
+        <!-- Chroma 向量库集成
+             提供 ChromaEmbeddingStore，通过 HTTP 连项目里跑的 chroma 服务 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-chroma</artifactId>
+        </dependency>
+
+        <!-- easy-rag 套件：包含 FileSystemDocumentLoader、TextDocumentParser、
+             DocumentSplitters 等"RAG 入门必备"的工具类 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-easy-rag</artifactId>
+        </dependency>
+
+        <!-- 工具类：让 application.yml 里写的属性能映射到 @ConfigurationProperties -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- ============================================================ -->
+        <!-- 用户系统（登录 / 历史）：JPA + MySQL + JWT + bcrypt              -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- 只取 Spring Security 的 BCrypt 实现，不引入整套安全过滤链 -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+        <!-- JWT（jjwt）。和 Python 版同样用 HS256 + 同一个密钥，token 互认 -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.12.6</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Spring Boot Maven 插件：支持 `mvn spring-boot:run` 启动、打可执行 jar -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

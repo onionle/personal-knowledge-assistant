@@ -1,0 +1,310 @@
+/* ============================================================
+   极简风格：左侧边栏 + 居中聊天 + 底部圆角输入框
+   参考 MiniMax / ChatGPT 的留白、清爽布局，不引任何 UI 库
+   ============================================================ */
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #1f1f1f;
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app { display: flex; height: 100%; }
+
+/* ---------------- 侧边栏 ---------------- */
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: #f7f7f8;
+  border-right: 1px solid #ececec;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 12px;
+}
+
+.brand {
+  font-size: 16px;
+  font-weight: 700;
+  padding: 6px 8px 14px;
+}
+
+.new-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  border: 1px solid #e2e2e2;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.new-btn:hover { background: #f0f0f0; }
+.new-btn .plus { font-size: 16px; line-height: 1; }
+
+.backend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 4px 6px;
+  font-size: 12px;
+  color: #888;
+}
+.backend-row select {
+  flex: 1;
+  font-size: 12px;
+  padding: 5px 6px;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.history-label {
+  font-size: 12px;
+  color: #999;
+  padding: 12px 8px 6px;
+}
+.history {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+}
+.history-item:hover { background: #ededed; }
+.history-item.active { background: #e6e6e8; }
+.history-item .hi-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-item .hi-act,
+.history-item .hi-del {
+  visibility: hidden;
+  color: #aaa;
+  font-size: 12px;
+}
+.history-item:hover .hi-act,
+.history-item:hover .hi-del { visibility: visible; }
+.history-item .hi-act:hover { color: #1a73e8; }
+.history-item .hi-del:hover { color: #e5484d; }
+.history-item .hi-edit {
+  flex: 1;
+  font: inherit;
+  font-size: 14px;
+  border: 1px solid #1a73e8;
+  border-radius: 6px;
+  padding: 4px 6px;
+  outline: none;
+  min-width: 0;
+}
+
+.user-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 10px 8px 4px;
+  border-top: 1px solid #ececec;
+}
+.user-area .avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: #d9d9de;
+  color: #555;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+}
+.user-area .user-meta { flex: 1; min-width: 0; }
+.user-area .uname { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-area .utip { font-size: 11px; color: #999; }
+.user-area .logout {
+  flex-shrink: 0;
+  font-size: 12px;
+  border: 1px solid #e2e2e2;
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.user-area .logout:hover { background: #f0f0f0; }
+
+/* ---------------- 登录/注册 弹窗 ---------------- */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.modal {
+  width: 320px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+}
+.modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+.modal-input {
+  width: 100%;
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  outline: none;
+  margin-bottom: 10px;
+}
+.modal-input:focus { border-color: #1f1f1f; }
+.modal-err { color: #e5484d; font-size: 13px; margin-bottom: 10px; }
+.modal-submit {
+  width: 100%;
+  border: none;
+  background: #1f1f1f;
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px;
+  font: inherit;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.modal-submit:disabled { background: #cfcfcf; cursor: not-allowed; }
+.modal-switch { font-size: 13px; color: #666; text-align: center; margin-top: 14px; }
+.modal-switch a { color: #1a73e8; cursor: pointer; }
+.modal-tip { font-size: 11px; color: #bbb; text-align: center; margin-top: 12px; }
+
+/* ---------------- 主区 ---------------- */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.topbar {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.topbar .conv-title {
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.topbar .conv-backend { font-size: 12px; color: #aaa; }
+
+.messages { flex: 1; overflow-y: auto; }
+
+/* 首屏空会话：标题 + 输入框 垂直居中 */
+.center-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+}
+.center-stage .stage-title {
+  font-size: 30px;
+  font-weight: 700;
+  margin: 0 0 28px;
+}
+.center-stage .stage-composer {
+  width: 100%;
+}
+/* 居中态的输入框做高一点，像首屏 hero 输入框 */
+.center-stage .composer { min-height: 96px; align-items: flex-start; }
+.center-stage .composer .send { align-self: flex-end; }
+.center-stage .stage-hint {
+  margin-top: 14px;
+  font-size: 12px;
+  color: #bbb;
+}
+
+.msg-list {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+.row { display: flex; margin: 14px 0; }
+.row.user { justify-content: flex-end; }
+.row.assistant { justify-content: flex-start; }
+
+.bubble {
+  max-width: 80%;
+  background: #f4f4f5;
+  padding: 10px 14px;
+  border-radius: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.assistant-text {
+  max-width: 100%;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #1f1f1f;
+}
+
+/* ---------------- 底部输入框 ---------------- */
+.composer-wrap {
+  padding: 0 20px 18px;
+}
+.composer {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  border: 1px solid #e2e2e2;
+  border-radius: 16px;
+  padding: 10px 10px 10px 16px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+  background: #fff;
+}
+.composer:focus-within { border-color: #c8c8c8; }
+.composer textarea {
+  flex: 1;
+  resize: none;
+  border: none;
+  outline: none;
+  font: inherit;
+  line-height: 1.6;
+  max-height: 160px;
+  padding: 4px 0;
+  background: transparent;
+}
+.composer .send {
+  flex-shrink: 0;
+  border: none;
+  background: #1f1f1f;
+  color: #fff;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.composer .send:disabled { background: #cfcfcf; cursor: not-allowed; }
+
+.footer-tip {
+  max-width: 760px;
+  margin: 8px auto 0;
+  text-align: center;
+  font-size: 12px;
+  color: #bbb;
+}

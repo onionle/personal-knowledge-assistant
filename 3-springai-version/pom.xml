@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Spring AI 版 · Maven 项目定义文件 (pom.xml)
+
+  跟 LangChain4j 版的 pom 最大区别：
+    1. 用 spring-ai-bom 统一管理 Spring AI 子模块版本
+    2. 用 spring-ai-starter-model-openai 一个 starter 搞定所有装配
+       （DeepSeek 走 OpenAI 兼容协议，所以用 openai starter + 自定义 base-url）
+    3. 不用我们手写 @Bean，Spring AI 看到 starter 在 classpath 就自动注入
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.14</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.example</groupId>
+    <artifactId>springai-knowledge-assistant</artifactId>
+    <version>0.1.0</version>
+    <name>Spring AI Knowledge Assistant</name>
+    <description>Spring AI 版个人知识库助手</description>
+
+    <properties>
+        <java.version>21</java.version>
+        <!-- 升级到 1.1.x：其 ChromaApi.getCollection 遇集合不存在会返回 null（1.0.0 是抛 404），
+             于是 initialize-schema 自动建表对 Chroma 1.x 重新生效，不再需要 setup 脚本手动建集合。
+             Spring AI 1.1.x 配套 Spring Boot 3.5.x（故上面 parent 一并升到 3.5.14）。 -->
+        <spring-ai.version>1.1.7</spring-ai.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring AI BOM：统一管理 spring-ai-* 系列子模块版本 -->
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- Spring Web -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Spring AI OpenAI Starter ★ 核心
+             DeepSeek 兼容 OpenAI 协议，所以走 OpenAI starter + 自定义 base-url
+             指向 DeepSeek，是最稳的接入方式（也是 DeepSeek 官方推荐做法）。
+             只要 classpath 有它，并且在 application.yml 配好 api-key + base-url，
+             就能直接 @Autowired ChatClient.Builder——跟 LangChain4j 版需要自己写
+             @Bean 形成鲜明对比 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
+        </dependency>
+
+        <!-- ============================================================ -->
+        <!-- Step 3 新增：本地嵌入模型 + Chroma 向量库                       -->
+        <!-- ============================================================ -->
+
+        <!-- 本地 ONNX 嵌入模型支持
+             默认下载 all-MiniLM-L6-v2（384 维，英文为主）；要换成 BGE-small-zh
+             需在 application.yml 里指定 ONNX 模型 URL 和 tokenizer URL。 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-transformers</artifactId>
+        </dependency>
+
+        <!-- Chroma 向量库 Starter
+             自动配置 ChromaVectorStore + 注册 @Autowired 用的 VectorStore Bean -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-vector-store-chroma</artifactId>
+        </dependency>
+
+        <!-- ============================================================ -->
+        <!-- Step 4 新增：RAG Advisor                                       -->
+        <!--                                                               -->
+        <!-- QuestionAnswerAdvisor 就在这个模块里。它是 Spring AI 做 RAG 的    -->
+        <!-- 官方推荐姿势：一个"对话增强切面"，调模型前自动用问题去 VectorStore  -->
+        <!-- 检索、把结果拼进 prompt。注意它不在 openai starter 里，要单独引。   -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-advisors-vector-store</artifactId>
+        </dependency>
+
+        <!-- ============================================================ -->
+        <!-- 用户系统（登录 / 历史）：JPA + MySQL + JWT + bcrypt              -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.12.6</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -1,0 +1,65 @@
+# ========================================================================
+# Spring Boot 应用配置
+# ------------------------------------------------------------------------
+# 这个文件里能写两类东西：
+#   1) Spring Boot 本身的配置（server.port、logging.level 等）
+#   2) 我们自己定义的配置（deepseek.*）
+#
+# ${ENV_VAR} 是占位符语法，运行时从系统环境变量取值。
+# ${ENV_VAR:default} 表示环境变量没设时用 default 兜底。
+# 如果环境变量没设且没默认值，启动时 @Value 注入会报错。
+# ========================================================================
+
+server:
+  port: 8080   # REST 接口监听端口。改端口同时记得更新前端/curl 命令
+
+spring:
+  application:
+    name: langchain4j-knowledge-assistant
+
+  # 用户系统：MySQL 数据源（连接信息从根 .env 读，跟 Python 版同一个库）
+  datasource:
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:knowledge_assistant}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none          # 表已由 db/schema.sql 建好，不让 Hibernate 动表结构
+    open-in-view: false
+    properties:
+      hibernate.dialect: org.hibernate.dialect.MySQLDialect
+
+# JWT（跟 Python 版同一个密钥 + HS256，token 互认）
+jwt:
+  secret: ${JWT_SECRET:dev-secret-change-me}
+  ttl-seconds: 604800         # 7 天
+
+# 自定义的 deepseek 段，被 Application.java 里 @Value 读取
+# DeepSeek 兼容 OpenAI 协议，所以 LangChain4j 这边用 OpenAiChatModel + 自定义 baseUrl
+deepseek:
+  api-key: ${DEEPSEEK_API_KEY}                       # 必填，环境变量
+  base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+  model: ${DEEPSEEK_MODEL:deepseek-chat}             # deepseek-chat（V3）/ deepseek-reasoner（R1）
+  temperature: 0.7
+  max-tokens: 1024
+
+# Step 3 新增：Chroma 向量库 + 知识库目录
+chroma:
+  base-url: ${CHROMA_BASE_URL:http://localhost:8000}
+  # 集合名带模型标记：升级 embedding 模型时新建一个集合，老数据保留可对比
+  collection-name: knowledge_base_bge_small_zh
+
+knowledge:
+  # 知识库文档目录（默认走相对路径，从 2-langchain4j-version/ 出发到项目根的 docs/knowledge）
+  dir: ${KNOWLEDGE_DIR:../docs/knowledge}
+
+# Step 3 切块参数
+rag:
+  chunk-size: 500       # 一块多少字符
+  chunk-overlap: 50     # 相邻块重叠多少字符（保持上下文连贯）
+
+# 日志：方便调试时观察 LangChain4j 内部行为
+logging:
+  level:
+    dev.langchain4j: INFO

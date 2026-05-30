@@ -1,0 +1,94 @@
+# ========================================================================
+# Spring AI 应用配置
+# ------------------------------------------------------------------------
+# 跟 LangChain4j 版的 application.yml 对比：
+#   LangChain4j 版用的是我们自己定义的 deepseek.* 段（@Value 手工读）
+#   Spring AI 版用的是 spring.ai.openai.* 段（Spring AI AutoConfiguration 自动读）
+#
+# 这就是"约定优于配置"——只要 key 名遵循官方约定，写完就生效，不用写代码。
+#
+# DeepSeek 兼容 OpenAI 协议，所以这里走 spring-ai-starter-model-openai +
+# 自定义 base-url 指向 DeepSeek。OpenAI 官方模型的话 base-url 留空即可。
+# ========================================================================
+
+server:
+  port: 8082   # 三个版本各用不同端口，避免冲突
+               # Python 版 8001 | LangChain4j 版 8080 | Spring AI 版 8082
+
+spring:
+  application:
+    name: springai-knowledge-assistant
+
+  # 用户系统：MySQL 数据源（跟 Python / LangChain4j 版同一个库）
+  datasource:
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:knowledge_assistant}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate.dialect: org.hibernate.dialect.MySQLDialect
+
+  ai:
+    openai:
+      # DeepSeek 的 API Key
+      api-key: ${DEEPSEEK_API_KEY}
+      # 关键：把 base-url 指向 DeepSeek 而不是 OpenAI
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      # 默认聊天选项
+      chat:
+        options:
+          model: ${DEEPSEEK_MODEL:deepseek-chat}
+          temperature: 0.7
+          max-tokens: 1024
+
+    # Step 3 新增：Chroma 向量库配置
+    # spring-ai-starter-vector-store-chroma 会自动读这一段创建 ChromaVectorStore Bean
+    vectorstore:
+      chroma:
+        client:
+          host: ${CHROMA_HOST:http://localhost}
+          port: ${CHROMA_PORT:8000}
+        # tenant/database 跟 Python / LangChain4j 版统一用 Chroma 自带默认值。
+        # （Spring AI 1.1.x 起 autoconfigure 才会读这两个属性；1.0.0 不读、强制用 SpringAiTenant。）
+        tenant-name: default_tenant
+        database-name: default_database
+        # 集合名跟 LangChain4j / Python 不同——因为本版本用的默认 all-MiniLM-L6-v2
+        # 模型生成 384 维向量，跟另外两版的 BGE 512 维不兼容，必须分开存
+        collection-name: knowledge_base_minilm
+        # 启动时自动建 tenant/database/collection（缺啥建啥）。
+        # Spring AI 1.1.x 修复了对 Chroma 1.x 的兼容：getCollection 遇不存在的集合返回 null
+        # （1.0.0 是抛 404 导致建表逻辑走不到），所以这里不再需要手动建集合的脚本。
+        initialize-schema: true
+
+# 本地嵌入模型文件（Application.java#embeddingModel 读取）
+# 为什么要显式配：TransformersEmbeddingModel 默认的 model.onnx 走 GitHub LFS，
+# 国内下载会被掐断（SocketException）导致启动失败。这里指向已下载好的本地文件，离线加载。
+#   - model.onnx：真模型（~86MB），从 GitHub LFS media 端点下好放在本地
+#   - tokenizer.json：jar 里自带真文件，这里用本地副本（等价于 classpath:/onnx/all-MiniLM-L6-v2/tokenizer.json）
+# 换机器/换路径只改这两行，或用同名环境变量 MINILM_ONNX_URI / MINILM_TOKENIZER_URI 覆盖。
+embedding:
+  onnx:
+    model-uri: ${MINILM_ONNX_URI:file:/home/matt/models/all-MiniLM-L6-v2/model.onnx}
+    tokenizer-uri: ${MINILM_TOKENIZER_URI:file:/home/matt/models/all-MiniLM-L6-v2/tokenizer.json}
+
+# JWT（跟 Python / LangChain4j 版同一个密钥 + HS256，token 互认）
+jwt:
+  secret: ${JWT_SECRET:dev-secret-change-me}
+  ttl-seconds: 604800
+
+# Step 3 新增：知识库目录 + 切块参数
+knowledge:
+  # 默认从 3-springai-version/ 出发到项目根的 docs/knowledge
+  dir: ${KNOWLEDGE_DIR:../docs/knowledge}
+
+rag:
+  chunk-size: 500
+  chunk-overlap: 50
+
+logging:
+  level:
+    org.springframework.ai: INFO

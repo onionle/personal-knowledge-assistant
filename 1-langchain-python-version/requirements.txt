@@ -1,0 +1,36 @@
+# LangChain Python 版依赖
+# 锁定 minor 版本上限，避免框架破坏式升级把代码搞挂
+# 升级前在 02-LangChain-Python入门.md 里看版本兼容说明
+
+# 核心
+langchain>=1.3,<2.0
+langchain-core>=1.4,<2.0
+
+# OpenAI 集成（DeepSeek 兼容 OpenAI 协议，所以用这个包 + 自定义 base_url）
+langchain-openai>=1.0,<2.0
+
+# 向量库集成
+langchain-chroma>=1.1,<2.0
+langchain-community>=0.4,<1.0
+
+# 本地 Embedding 模型（Step 3 起用，BGE-small-zh-v1.5）
+# 直接用 sentence-transformers，不用 langchain-huggingface——
+# 因为后者目前还锁死 langchain-core<1.0，跟我们的 1.x 冲突。
+# 我们自己写 15 行包一个 Embeddings 类（见 embeddings.py），反而更可控。
+sentence-transformers>=3.0,<5.0
+# 文档切分（Step 3 起用）
+langchain-text-splitters>=1.0,<2.0
+
+# Web 框架
+fastapi>=0.130,<1.0
+uvicorn[standard]>=0.30,<1.0
+
+# 工具类
+python-dotenv>=1.0,<2.0
+pydantic>=2.7,<3.0
+
+# 用户系统（登录 / 历史）：MySQL + JWT
+SQLAlchemy>=2.0,<3.0
+PyMySQL>=1.1,<2.0        # MySQL 驱动（纯 Python，免编译）
+bcrypt>=4.1,<5.0         # 密码哈希
+PyJWT>=2.8,<3.0          # 签发 / 校验 JWT
