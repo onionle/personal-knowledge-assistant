@@ -2,7 +2,7 @@
 
 # personal-knowledge-assistant
 
-一个**个人知识库智能助手**，提供 **LangChain (Python) / LangChain4j / Spring AI** 三种实现。
+本项目是**个人知识库智能助手**，提供 **LangChain (Python) / LangChain4j / Spring AI** 三种实现。
 三套后端接口一致、共用同一套前端与数据库——按你的技术栈与偏好选用其一即可。
 
 | 实现 | 语言/框架 | 端口 |
