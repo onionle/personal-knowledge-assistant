@@ -15,7 +15,6 @@
 
 ![界面截图](docs/images/screenshot.png)
 
-> 截图占位：把界面截图保存为 `docs/images/screenshot.png` 即可在此显示。
 
 ## 架构
 
