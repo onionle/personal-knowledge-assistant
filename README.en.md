@@ -1,10 +1,12 @@
 English | [简体中文](README.md)
 
-# personal-knowledge-assistant
+# 🤖 Personal Knowledge Assistant · Three Implementations
 
-A **personal knowledge-base assistant**, available in **three implementations**:
-**LangChain (Python) / LangChain4j / Spring AI**. All three expose the same API and share
-one frontend and one database — pick whichever fits your stack.
+> One **full-stack RAG knowledge assistant**, built three ways — with **LangChain (Python),
+> LangChain4j, and Spring AI**. All three expose an identical API behind one React frontend:
+> **switch the backend from a dropdown and watch three frameworks answer the same question.**
+
+Pick the one that fits your stack — or run all three side by side.
 
 | Implementation | Language / Framework | Port |
 |------|----------|------|
@@ -15,8 +17,6 @@ one frontend and one database — pick whichever fits your stack.
 ## Preview
 
 ![screenshot](docs/images/screenshot.png)
-
-> Placeholder: save a UI screenshot as `docs/images/screenshot.png` to show it here.
 
 ## Architecture
 
@@ -40,14 +40,15 @@ flowchart TB
     BE -->|"chat / embedding"| LLM
 ```
 
-## Features
+## ✨ Highlights
 
-- Multi-turn chat with streaming output (token-by-token over SSE)
-- RAG knowledge-base Q&A (document embedding + retrieval-augmented generation, with sources)
-- Agent + tool calling (the model decides whether to search the knowledge base)
-- Structured output (free text → typed JSON)
-- User system: register / login (JWT), conversation history, rename, delete (soft delete)
-- One React frontend works with all three backends (switch via a dropdown)
+- 🔍 **RAG knowledge-base Q&A** — document embedding + retrieval-augmented generation, answers cite their sources
+- 🛠️ **Agent + tool calling** — the model decides whether to search the knowledge base (function calling)
+- ⚡ **Streaming output** — token-by-token over SSE, ChatGPT-style typewriter effect
+- 👤 **Full user system** — JWT login, conversation history, rename, soft delete; history also feeds multi-turn context
+- 🔄 **One frontend, three backends** — identical API, switch from a dropdown at zero cost
+- 🧩 **Pluggable** — LLM (any OpenAI-compatible, DeepSeek by default), vector store (Chroma), embeddings — all swappable
+- 📦 **Structured output** — free text → typed JSON
 
 ## Tech stack
 
