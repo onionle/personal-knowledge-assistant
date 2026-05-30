@@ -4,7 +4,7 @@
 
  # 🤖 个人知识库助手 · 以三种主流方式实现
 
-  > 同一个**全栈 RAG 知识库助手**，分别用 **LangChain (Python)、LangChain4j、Spring AI** 三大主流框架各实现一遍。
+  > 同一个**全栈 RAG 知识库AI助手**，分别用 **LangChain (Python)、LangChain4j、Spring AI** 三大主流框架各实现一遍。
   > 三套后端接口完全一致，共用一个 React 前端 —— **下拉框实时切换后端，同一句话看三个框架怎么答。**
 
   按你的技术栈选一个，或三个一起跑对着看。
